@@ -120,11 +120,22 @@ const currentTimeDisplay = document.getElementById('currentTime');
 
 videoInput.addEventListener('change', () => {
   const file = videoInput.files[0];
-  if (file) {
-    const url = URL.createObjectURL(file);
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+
+  // 一度リセット（これが重要）
+  preview.pause();
+  preview.removeAttribute('src');
+  preview.load();
+
+  // 少し待ってから再セット
+  setTimeout(() => {
     preview.src = url;
     preview.load();
-  }
+    preview.muted = true;
+    preview.playsInline = true;
+  }, 100);
 });
 
 // 現在時間表示
