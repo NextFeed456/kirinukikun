@@ -2,233 +2,41 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>動画切り抜きメーカー｜NextFeed</title>
-
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
-
-<style>
-body {
-  margin: 0;
-  font-family: sans-serif;
-  background: #0f172a;
-  color: #fff;
-  text-align: center;
-}
-
-.container {
-  max-width: 600px;
-  margin: auto;
-  padding: 20px;
-}
-
-.notice {
-  background: #1e293b;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  margin-bottom: 20px;
-}
-
-input, button {
-  margin: 10px 0;
-  padding: 10px;
-  width: 100%;
-  border-radius: 6px;
-  border: none;
-}
-
-button {
-  background: #6366f1;
-  color: white;
-  cursor: pointer;
-}
-
-video {
-  width: 100%;
-  margin-top: 10px;
-  border-radius: 8px;
-}
-
-.time-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.top-link {
-  display: block;
-  text-align: left;
-  margin-bottom: 10px;
-  color: #aaa;
-}
-</style>
+<title>テスト</title>
 </head>
 
-<body>
+<body style="background:#0f172a; color:white; text-align:center;">
 
-<div class="container">
-
-<a href="/" class="top-link">← トップへ戻る</a>
-
-<h1>動画切り抜きメーカー</h1>
-<p>ブラウザで簡単に動画カット＆テロップ追加</p>
-
-<div class="notice">
-<p>このツールでは動画の保存・取得はできません。</p>
-<p>お手元の動画データを読み込んでご利用ください。</p>
-<p>対応サイズ：最大200MB（推奨100MB以下）</p>
-<p>※β版：動作テスト中です</p>
-</div>
+<h1>動画読み込みテスト</h1>
 
 <input type="file" id="videoInput" accept="video/*">
+<br><br>
 
-<video id="preview" controls></video>
-
-<p id="currentTime">現在位置：0秒</p>
-
-<div class="time-buttons">
-<button onclick="setStart()">ここを開始</button>
-<button onclick="setEnd()">ここを終了</button>
-</div>
-
-<input type="number" id="start" placeholder="開始秒">
-<input type="number" id="end" placeholder="終了秒">
-
-<input type="text" id="caption" placeholder="テロップ（任意）">
-
-<label>文字色</label>
-<input type="color" id="textColor" value="#ffffff">
-
-<label>縁色</label>
-<input type="color" id="strokeColor" value="#000000">
-
-<button onclick="processVideo()">切り抜きを作成</button>
-
-<p id="status"></p>
-
-<a id="download" style="display:none;" download="clip.mp4">ダウンロード</a>
-
-</div>
+<video id="preview" controls width="500"></video>
 
 <script>
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
+const input = document.getElementById("videoInput");
+const video = document.getElementById("preview");
 
-const videoInput = document.getElementById('videoInput');
-const preview = document.getElementById('preview');
-const currentTimeDisplay = document.getElementById('currentTime');
+input.addEventListener("change", function () {
+  console.log("イベント発火");
 
-videoInput.addEventListener('change', () => {
-  const file = videoInput.files[0];
-
-  console.log("選択されたファイル:", file);
+  const file = input.files[0];
 
   if (!file) {
-    alert("ファイル取得失敗");
+    alert("ファイルなし");
     return;
   }
+
+  console.log("ファイル取得:", file);
 
   const url = URL.createObjectURL(file);
-  console.log("生成URL:", url);
 
-  // 強制リセット
-  preview.pause();
-  preview.removeAttribute('src');
-  preview.load();
+  video.src = url;
+  video.load();
 
-  // 再設定
-  preview.src = url;
-
-  preview.onloadedmetadata = () => {
-    console.log("読み込み成功");
-    preview.currentTime = 0;
-  };
-
-  preview.onerror = (e) => {
-    console.error("動画読み込みエラー", e);
-    alert("動画の読み込みに失敗しました");
-  };
+  console.log("セット完了");
 });
-
-// 現在時間表示
-preview.addEventListener('timeupdate', () => {
-  currentTimeDisplay.innerText = "現在位置：" + Math.floor(preview.currentTime) + "秒";
-});
-
-// 開始設定
-function setStart() {
-  document.getElementById('start').value = Math.floor(preview.currentTime);
-}
-
-// 終了設定
-function setEnd() {
-  document.getElementById('end').value = Math.floor(preview.currentTime);
-}
-
-// テキスト安全処理
-function escapeText(text) {
-  return text.replace(/:/g, '\\:').replace(/'/g, "\\'");
-}
-
-async function processVideo() {
-  const file = videoInput.files[0];
-  const start = document.getElementById('start').value;
-  const end = document.getElementById('end').value;
-  const caption = document.getElementById('caption').value;
-  const textColor = document.getElementById('textColor').value;
-  const strokeColor = document.getElementById('strokeColor').value;
-  const status = document.getElementById('status');
-
-  if (!file) {
-    alert("動画を選択してください");
-    return;
-  }
-
-  if (!start || !end) {
-    alert("開始と終了を設定してください");
-    return;
-  }
-
-  status.innerText = "処理中です（30秒〜1分ほどかかる場合があります）";
-
-  if (!ffmpeg.isLoaded()) {
-    await ffmpeg.load();
-  }
-
-  ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
-
-  let command = [
-    '-i', 'input.mp4',
-    '-ss', start,
-    '-to', end
-  ];
-
-  if (caption) {
-    const safeText = escapeText(caption);
-    command.push(
-      '-vf',
-      `drawtext=text='${safeText}':fontcolor=${textColor}:fontsize=24:borderw=2:bordercolor=${strokeColor}:x=(w-text_w)/2:y=h-50`
-    );
-  }
-
-  command.push('-c:a', 'copy', 'output.mp4');
-
-  try {
-    await ffmpeg.run(...command);
-  } catch (e) {
-    status.innerText = "処理に失敗しました（サイズまたは形式の問題）";
-    return;
-  }
-
-  const data = ffmpeg.FS('readFile', 'output.mp4');
-  const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-
-  const download = document.getElementById('download');
-  download.href = url;
-  download.style.display = 'block';
-
-  status.innerText = "完了しました！";
-}
 </script>
 
 </body>
