@@ -120,22 +120,34 @@ const currentTimeDisplay = document.getElementById('currentTime');
 
 videoInput.addEventListener('change', () => {
   const file = videoInput.files[0];
-  if (!file) return;
+
+  console.log("選択されたファイル:", file);
+
+  if (!file) {
+    alert("ファイル取得失敗");
+    return;
+  }
 
   const url = URL.createObjectURL(file);
+  console.log("生成URL:", url);
 
-  // 一度リセット（これが重要）
+  // 強制リセット
   preview.pause();
   preview.removeAttribute('src');
   preview.load();
 
-  // 少し待ってから再セット
-  setTimeout(() => {
-    preview.src = url;
-    preview.load();
-    preview.muted = true;
-    preview.playsInline = true;
-  }, 100);
+  // 再設定
+  preview.src = url;
+
+  preview.onloadedmetadata = () => {
+    console.log("読み込み成功");
+    preview.currentTime = 0;
+  };
+
+  preview.onerror = (e) => {
+    console.error("動画読み込みエラー", e);
+    alert("動画の読み込みに失敗しました");
+  };
 });
 
 // 現在時間表示
